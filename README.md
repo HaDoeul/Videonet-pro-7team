@@ -1,3 +1,5 @@
+####멀티미디어 개론 7팀 수정본
+####
 # VideoNet Pro - AI 기반 화상회의 플랫폼
 
 [![GitHub](https://img.shields.io/github/license/kjhk3082/Videonet)](LICENSE)
