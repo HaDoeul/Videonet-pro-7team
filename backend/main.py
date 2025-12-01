@@ -2,7 +2,7 @@
 VideoNet Pro - 백엔드 서버
 간단하고 강력한 화상회의 서버
 """
-
+# 기본 모듈 및 환경 변수 로드
 import os
 from dotenv import load_dotenv
 
