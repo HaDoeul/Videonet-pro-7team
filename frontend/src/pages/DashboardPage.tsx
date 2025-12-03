@@ -14,6 +14,8 @@ import {
   Cog6ToothIcon,
   ClipboardDocumentCheckIcon,
   XMarkIcon,
+  SunIcon,
+  MoonIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { roomApi } from '@/utils/api';
@@ -29,6 +31,7 @@ export default function DashboardPage() {
   const [showPersonalCode, setShowPersonalCode] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   // 방 목록 불러오기
   useEffect(() => {
@@ -107,63 +110,68 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-discord-dark flex">
-      {/* 사이드바 */}
-      <aside className="w-64 bg-discord-darker border-r border-gray-800 flex flex-col">
-        {/* 사용자 프로필 */}
-        <div className="p-4 border-b border-gray-800">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-discord-brand to-zoom-blue rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">
-                {user?.username.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1">
-              <p className="text-white font-medium">{user?.username}</p>
-              <p className="text-xs text-gray-400">{user?.email}</p>
-            </div>
-          </div>
-        </div>
+    <div className={`min-h-screen flex ${isDarkMode ? 'bg-discord-dark text-white' : 'bg-white text-gray-900'}`}>
+      {/* 아이콘 사이드바 */}
+<aside
+  className={`w-20 border-r flex flex-col items-center py-4 space-y-4 ${
+    isDarkMode ? 'bg-discord-darker border-gray-800' : 'bg-gray-200 border-gray-300'
+  }`}
+>
+  <button
+    onClick={() => setShowPersonalCode(true)}
+    className={`p-3 rounded-xl ${
+      isDarkMode
+        ? 'text-gray-300 hover:text-white hover:bg-discord-hover'
+        : 'text-gray-700 hover:text-black hover:bg-gray-300'
+    }`}
+    title="내 참가 코드"
+  >
+    <ClipboardDocumentCheckIcon className="w-6 h-6" />
+  </button>
 
-        {/* 메뉴 */}
-        <nav className="flex-1 p-4">
-          <div className="space-y-1">
-            <button
-              onClick={() => setShowPersonalCode(true)}
-              className="sidebar-item w-full"
-            >
-              <ClipboardDocumentCheckIcon className="w-5 h-5 mr-3" />
-              내 참가 코드
-            </button>
-            
-            <button 
-              onClick={() => setShowSettings(true)}
-              className="sidebar-item w-full"
-            >
-              <Cog6ToothIcon className="w-5 h-5 mr-3" />
-              설정
-            </button>
-          </div>
-        </nav>
+  <button
+    onClick={() => setShowSettings(true)}
+    className={`p-3 rounded-xl ${
+      isDarkMode
+        ? 'text-gray-300 hover:text-white hover:bg-discord-hover'
+        : 'text-gray-700 hover:text-black hover:bg-gray-300'
+    }`}
+    title="설정"
+  >
+    <Cog6ToothIcon className="w-6 h-6" />
+  </button>
 
-        {/* 로그아웃 */}
-        <div className="p-4 border-t border-gray-800">
-          <button
-            onClick={logout}
-            className="sidebar-item w-full text-red-400 hover:bg-red-500/10 hover:text-red-300"
-          >
-            <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3" />
-            로그아웃
-          </button>
-        </div>
-      </aside>
+  <button
+    onClick={logout}
+    className={`p-3 rounded-xl mt-auto ${
+      isDarkMode
+        ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
+        : 'text-red-600 hover:text-red-800 hover:bg-red-200'
+    }`}
+    title="로그아웃"
+  >
+    <ArrowRightOnRectangleIcon className="w-6 h-6" />
+  </button>
+
+  <button
+    onClick={() => setIsDarkMode(prev => !prev)}
+    className={`p-3 rounded-xl ${
+      isDarkMode
+        ? 'text-gray-400 hover:text-white hover:bg-discord-hover'
+        : 'text-gray-600 hover:text-black hover:bg-gray-300'
+    }`}
+    title="다크/라이트 전환"
+  >
+    {isDarkMode ? <SunIcon className="w-6 h-6" /> : <MoonIcon className="w-6 h-6" />}
+  </button>
+</aside>
 
       {/* 메인 컨텐츠 */}
       <main className="flex-1 p-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">대시보드</h1>
-          <p className="text-gray-400">
+          <h1 className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>대시보드</h1>
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             회의실을 만들거나 참가해보세요
           </p>
         </div>
@@ -174,7 +182,11 @@ export default function DashboardPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowCreateModal(true)}
-            className="bg-gradient-to-r from-discord-brand to-zoom-blue p-6 rounded-lg text-white hover:shadow-lg transition-shadow"
+            className={`p-6 rounded-lg hover:shadow-lg transition-shadow ${
+              isDarkMode
+                ? 'bg-gradient-to-r from-discord-brand to-zoom-blue text-white'
+                : 'bg-blue-600 text-white'
+            }`}
           >
             <PlusIcon className="w-8 h-8 mb-3" />
             <h3 className="text-lg font-semibold mb-1">새 회의 시작</h3>
@@ -198,7 +210,11 @@ export default function DashboardPage() {
                 }
               }
             }}
-            className="bg-discord-light border border-gray-700 p-6 rounded-lg text-white hover:border-gray-600 transition-colors cursor-pointer"
+            className={`p-6 rounded-lg transition-colors cursor-pointer ${
+              isDarkMode
+                ? 'bg-discord-light text-white border border-gray-700 hover:border-gray-600'
+                : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
+            }`}
           >
             <UserGroupIcon className="w-8 h-8 mb-3" />
             <h3 className="text-lg font-semibold mb-1">회의 참가</h3>
@@ -210,7 +226,7 @@ export default function DashboardPage() {
 
         {/* 활성 회의실 목록 */}
         <div>
-          <h2 className="text-xl font-semibold text-white mb-4">
+          <h2 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             활성 회의실
           </h2>
           
@@ -225,19 +241,23 @@ export default function DashboardPage() {
                   key={room.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-discord-light rounded-lg p-4 border border-gray-700 hover:border-discord-brand transition-colors"
+                  className={`rounded-lg p-4 transition-colors ${
+                    isDarkMode
+                      ? 'bg-discord-light border border-gray-700 hover:border-discord-brand'
+                      : 'bg-white border border-gray-300 hover:border-blue-500'
+                  }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-white font-medium">{room.name}</h3>
-                      <p className="text-sm text-gray-400">
+                      <h3 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-medium`}>{room.name}</h3>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         {room.participants.length}/{room.maxParticipants}명 참가 중
                       </p>
                     </div>
                     <VideoCameraIcon className="w-5 h-5 text-discord-brand" />
                   </div>
                   
-                  <div className="flex items-center text-xs text-gray-500 mb-3">
+                  <div className={`flex items-center text-xs mb-3 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                     <ClockIcon className="w-4 h-4 mr-1" />
                     {new Date(room.createdAt).toLocaleString()}
                   </div>
@@ -261,10 +281,12 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-discord-light rounded-lg border border-gray-700">
+            <div className={`text-center py-12 rounded-lg border ${
+              isDarkMode ? 'bg-discord-light border-gray-700' : 'bg-gray-100 border-gray-300'
+            }`}>
               <VideoCameraIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400">활성 회의실이 없습니다</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>활성 회의실이 없습니다</p>
+              <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                 새 회의를 시작해보세요!
               </p>
             </div>

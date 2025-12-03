@@ -50,13 +50,9 @@ export default function LoginPage() {
 
   return (
     /*   여기 수정함   */
-    <div className="min-h-screen flex items-center justify-center p-4 
-     bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-100">
 
 
-      {/* 배경 그라데이션 효과 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-discord-brand/10 via-transparent to-zoom-blue/10" />
-      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -65,7 +61,7 @@ export default function LoginPage() {
       >
         {/* 로그인 카드 (수정함)*/}
       
-        <div className="bg-discord-light/90 border border-discord-brand/60rounded-2xl shadow-2xl p-10 backdrop-blur-md"> 
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-xl p-10"> 
            
 
           {/* 로고와 타이틀 */}
@@ -78,10 +74,10 @@ export default function LoginPage() {
             >
               <img src="/logo.svg" alt="VideoNet Pro" className="w-28 h-28 mx-auto mb-4" />
             </motion.div>
-            <h1 className="text-2xl font-bold text-gray-100 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
               다시 오신 것을 환영합니다!
             </h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-600 text-sm">
               VideoNet Pro에 로그인하세요
             </p>
           </div>
@@ -100,7 +96,7 @@ export default function LoginPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="input-field pl-10"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 pl-10 input-field"
                   placeholder="이메일 또는 사용자명"
                   required
                   autoComplete="username"
@@ -120,7 +116,7 @@ export default function LoginPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="input-field pl-10 pr-10"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 pl-10 pr-10 input-field"
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
@@ -152,7 +148,7 @@ export default function LoginPage() {
   disabled={isLoading}
   whileHover={{ scale: 1.02 }}
   whileTap={{ scale: 0.98 }}
-  className="w-full bg-pink-500 hover:bg-pink-600 py-3 rounded-lg font-semibold tracking-wide shadow-md hover:shadow-xl transition-all"
+  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold tracking-wide shadow-md transition-all"
 >
   {isLoading ? (
     <div className="flex items-center justify-center">
@@ -178,29 +174,27 @@ export default function LoginPage() {
           {/* 구분선 */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700"></div>
+              <div className="w-full border-t border-gray-300"></div>
             </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="px-2 bg-discord-light text-gray-500">또는</span>
-            </div>
+            {/*<div className="relative flex justify-center text-xs">
+              <span className="px-3 bg-white text-gray-600">또는</span>
+            </div>*/}
           </div>
 
           {/* 데모 계정 정보(수정함) */}
-          <div className="bg-discord-darker/80 border border-gray-700 rounded-lg p-4 text-sm shadow-md backdrop-blur-sm">
+          {/*<div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm shadow-sm">
 
             <p className="text-gray-300 font-medium mb-2">🎯 테스트 계정</p>
             <p className="text-gray-400">이메일: demo@example.com</p>
             <p className="text-gray-400">비밀번호: demo1234</p>
             <p className="text-gray-400 mt-2">초대 코드: MASTER2024</p>
-          </div>
+          </div> */}
         </div>
 
         {/* 푸터 */}
-        <div className="text-center mt-6 text-xs text-gray-500 space-y-2">
+        <div className="text-center mt-6 text-xs text-gray-600 space-y-2">
           <p>© 2025 VideoNet Pro. All rights reserved.</p>
-          <p className="text-gray-400">
-            20205146 한림대학교 콘텐츠IT학과 김재형
-          </p>
+
           <p>
             AI+X 프로젝트 과제물 · 2025년 제작
           </p>
