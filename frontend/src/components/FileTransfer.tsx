@@ -22,6 +22,8 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { compressImage } from '@/utils/compressImage';
+import { compressVideo } from '@/utils/compressVideo';
+
 
 interface FileTransferProps {
   roomId: string;
@@ -55,6 +57,8 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cvReady, setCvReady] = useState(false);
+
+  const [shouldCompress, setShouldCompress] = useState(true);
 
   const decodedBlobUrl = useRef("");
   useEffect(() => {
@@ -141,26 +145,64 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
 //       img.src = URL.createObjectURL(file);
 //     });
 //   }
+// H.263 압축 후 서버에 인코딩 요청 → P2P 전송
+  const sendFileH263 = async () => {
+    if (!selectedFile) return;
 
+    try {
+      toast('H.263 압축 전송 요청 중...', { icon: '🎬' });
+
+      // File → ArrayBuffer → Uint8Array
+      const buffer = await selectedFile.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+
+      // Uint8Array → base64 문자열
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const fileBase64 = btoa(binary);
+
+      // 서버에 H.263 인코딩 + 전송 요청
+      socket.emit('encode_and_send_h263', {
+        roomId,
+        fileName: selectedFile.name,
+        fileData: fileBase64,
+      });
+
+      toast.success('서버로 H.263 압축 전송 요청을 보냈습니다');
+    } catch (error) {
+      console.error('H.263 전송 요청 실패:', error);
+      toast.error('H.263 압축 전송 요청에 실패했습니다');
+    }
+  };
   // 파일 전송 (청크 기반)
   const sendFile = async () => {
     if (!selectedFile) return;
 
     setIsTransferring(true);
     setProgress(0);
-    const startTime = Date.now();
-
+    
     try {
       let fileToSend = selectedFile;
 
-      if(selectedFile.type.startsWith("image/")){
+      if(selectedFile.type.startsWith("image/") && shouldCompress){
         toast("이미지 압축 중...", { icon: "🖼️" });
 
         fileToSend = await compressImage(selectedFile);
 
         toast.success(`이미지 압축 완료: ${(selectedFile.size / 1024).toFixed(2)} KB → ${(fileToSend.size / 1024).toFixed(2)} KB`);
       }
-      
+
+      if(selectedFile.type.startsWith("video/") && shouldCompress){
+        toast("동영상 압축 중...", { icon: "🎬" });
+
+        fileToSend = await compressVideo(selectedFile);
+
+        toast.success(`동영상 압축 완료: ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB → ${(fileToSend.size / 1024 / 1024).toFixed(2)} MB`);
+      }
+
+      const startTime = Date.now();
       // 해시 계산
       toast('파일 해시 계산 중...', { icon: '🔐' });
       const fileHash = await calculateHash(fileToSend);
@@ -197,7 +239,7 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
 
         // 진행률 업데이트
         setProgress(((i + 1) / totalChunks) * 100);
-
+        console.log("전송 청크:", i + 1, "/", totalChunks);
         // 백프레셔 방지 (10ms 대기)
         await new Promise(resolve => setTimeout(resolve, 10));
       }
@@ -247,6 +289,37 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
         setProgress(progress);
       }
     });
+    // H.263 압축 후 서버에 인코딩 요청 → P2P 전송
+    const sendFileH263 = async () => {
+      if (!selectedFile) return;
+
+      try {
+        toast('H.263 압축 전송 요청 중...', { icon: '🎬' });
+
+        // File → ArrayBuffer → Uint8Array
+        const buffer = await selectedFile.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+
+        // Uint8Array → base64 문자열
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const fileBase64 = btoa(binary);
+
+        // 서버에 H.263 인코딩 + 전송 요청
+        socket.emit('encode_and_send_h263', {
+          roomId,
+          fileName: selectedFile.name,
+          fileData: fileBase64,
+        });
+
+        toast.success('서버로 H.263 압축 전송 요청을 보냈습니다');
+      } catch (error) {
+        console.error('H.263 전송 요청 실패:', error);
+        toast.error('H.263 압축 전송 요청에 실패했습니다');
+      }
+    };
 
     socket.on('file_transfer_end', () => {
       if (fileMetadata && receivedChunks.length > 0) {
@@ -422,12 +495,29 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
 
       {/* 전송 버튼 */}
       {selectedFile && !isTransferring && (
-        <button
-          onClick={sendFile}
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-        >
-          파일 전송
-        </button>
+        <>
+          <button
+            onClick={sendFile}
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors mb-2"
+          >
+            파일 전송
+          </button>
+          <label>
+            <input
+              type="checkbox"
+              checked={shouldCompress} // ⭐️ 상태에 따라 체크 여부 결정
+              onChange={(e) => setShouldCompress(e.target.checked)} // ⭐️ 체크박스 상태를 그대로 반영
+              style={{ marginRight: '8px' }}
+            />
+            **파일 압축 후 보내기** (체크 해제 시 원본 전송)
+          </label>
+          {/* <button
+            onClick={sendFileH263}
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+          >
+            H.263 압축 후 전송
+          </button> */}
+        </>
       )}
 
       {/* 진행바 */}
@@ -436,7 +526,7 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
           <div className="w-full bg-discord-darker rounded-full h-4">
             <div
               className="bg-discord-brand h-4 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${progress*2}%` }}
             />
           </div>
           <p className="text-sm text-gray-400 text-center">{progress.toFixed(1)}%</p>

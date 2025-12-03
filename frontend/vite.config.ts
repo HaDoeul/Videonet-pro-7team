@@ -19,9 +19,18 @@ export default defineConfig({
   optimizeDeps: {
     // SimplePeer 종속성 사전 번들링
     include: ['simple-peer'],
+    exclude: [
+      '@ffmpeg/ffmpeg', 
+      '@ffmpeg/core', 
+      '@ffmpeg/util'
+    ],
   },
   server: {
-    
+    headers: {
+      // 👈 이 부분의 오타나 누락이 없는지 확인
+      "Cross-Origin-Opener-Policy": "same-origin", 
+      "Cross-Origin-Embedder-Policy": "require-corp", // 👈 "require-corp"인지 확인
+    },
     port: 7700, // 개발 서버 포트 (VideoNet Pro 전용)
     strictPort: true, // 포트 고정 (다른 포트로 변경 방지)
     host: true, // 외부 접속 허용 (중요!)
