@@ -6,7 +6,7 @@
  * - 동영상 분석 (슬라이싱 기반 요약, GPT 인물 인식)
  */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DocumentArrowUpIcon,
@@ -17,11 +17,9 @@ import {
   SignalIcon,
   FilmIcon,
   MagnifyingGlassIcon,
-  XMarkIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { compressImage } from '@/utils/compressImage';
 
 interface FileTransferProps {
   roomId: string;
@@ -54,19 +52,7 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
   const [isChatLoading, setIsChatLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [cvReady, setCvReady] = useState(false);
 
-  const decodedBlobUrl = useRef("");
-  useEffect(() => {
-    window.onOpenCvReadyCallback = () => {
-      setCvReady(true);
-      console.log('✅ OpenCV.js is ready');
-    }
-    if(window.cv){
-      setCvReady(true);
-      console.log('✅ OpenCV.js is ready');
-    }
-  }, []);
   // 파일 선택 핸들러
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,60 +74,6 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
     return hashHex;
   };
 
-//   // OpenCV.js 준비 대기 함수
-//   async function waitForOpenCV() {
-//   while (
-//     !(window as any).cv ||
-//     !(window as any).cv.Mat ||
-//     !(window as any).cv.IMWRITE_JPEG_QUALITY
-//   ) {
-//     await new Promise(res => setTimeout(res, 20));
-//   }
-// }
-
-
-//     /** 
-//    * OpenCV.js를 이용한 JPEG(q=10) 이미지 압축 함수
-//    */
-//   async function compressImageWithOpenCV(file: File): Promise<Blob> {
-//     await waitForOpenCV();
-//     return new Promise((resolve) => {
-//       const img = new Image();
-//       img.onload = () => {
-//         // canvas로 이미지 불러오기
-//         const canvas = document.createElement("canvas");
-//         canvas.width = img.width;
-//         canvas.height = img.height;
-//         const ctx = canvas.getContext("2d")!;
-//         ctx.drawImage(img, 0, 0);
-
-//         // Mat 변환
-//         const src = window.cv.imread(canvas);
-
-//         // JPEG 압축
-//         const compressed = new window.cv.Mat();
-//         const params = new window.cv.IntVector();
-//         params.push_back(window.cv.IMWRITE_JPEG_QUALITY);
-//         params.push_back(10); // ← 여기서 q=10
-
-//         window.cv.imencode(".jpg", src, compressed, params);
-
-//         // Blob 생성
-//         const byteArray = new Uint8Array(compressed.data);
-//         const blob = new Blob([byteArray], { type: "image/jpeg" });
-
-//         // 메모리 해제
-//         src.delete();
-//         compressed.delete();
-//         params.delete();
-
-//         resolve(blob);
-//       };
-
-//       img.src = URL.createObjectURL(file);
-//     });
-//   }
-
   // 파일 전송 (청크 기반)
   const sendFile = async () => {
     if (!selectedFile) return;
@@ -151,30 +83,20 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
     const startTime = Date.now();
 
     try {
-      let fileToSend = selectedFile;
-
-      if(selectedFile.type.startsWith("image/")){
-        toast("이미지 압축 중...", { icon: "🖼️" });
-
-        fileToSend = await compressImage(selectedFile);
-
-        toast.success(`이미지 압축 완료: ${(selectedFile.size / 1024).toFixed(2)} KB → ${(fileToSend.size / 1024).toFixed(2)} KB`);
-      }
-      
       // 해시 계산
       toast('파일 해시 계산 중...', { icon: '🔐' });
-      const fileHash = await calculateHash(fileToSend);
+      const fileHash = await calculateHash(selectedFile);
 
       // 청크 크기: 16KB (대역폭 최소화)
       const CHUNK_SIZE = 16 * 1024;
-      const totalChunks = Math.ceil(fileToSend.size / CHUNK_SIZE);
+      const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
 
       // 메타데이터 먼저 전송
       socket.emit('file_transfer_start', {
         roomId,
-        fileName: fileToSend.name,
-        fileSize: fileToSend.size,
-        fileType: fileToSend.type,
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        fileType: selectedFile.type,
         totalChunks,
         hash: fileHash,
       });
@@ -182,8 +104,8 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
       // 청크 단위로 전송
       for (let i = 0; i < totalChunks; i++) {
         const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, fileToSend.size);
-        const chunk = fileToSend.slice(start, end);
+        const end = Math.min(start + CHUNK_SIZE, selectedFile.size);
+        const chunk = selectedFile.slice(start, end);
 
         // ArrayBuffer로 변환
         const buffer = await chunk.arrayBuffer();
@@ -207,11 +129,11 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
 
       const endTime = Date.now();
       const transferTime = (endTime - startTime) / 1000; // 초
-      const bandwidth = (fileToSend.size / 1024 / 1024) / transferTime; // MB/s
+      const bandwidth = (selectedFile.size / 1024 / 1024) / transferTime; // MB/s
 
       setTransferStats({
-        fileName: (fileToSend as File).name,
-        fileSize: fileToSend.size,
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
         transferTime,
         bandwidth,
         hash: fileHash,
