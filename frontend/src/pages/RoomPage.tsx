@@ -1394,7 +1394,7 @@ export default function RoomPage() {
                         isDarkMode ? 'bg-discord-darker' : 'bg-gray-100'
                       }`}
                     >
-                      <h4 className="text-md font-medium mb-2">Q vs PSNR (화질 - 높을수록 좋음)</h4>
+                      <h4 className="text-md font-medium mb-2">Q vs PSNR</h4>
                       <ResponsiveContainer width="100%" height={200}>
                         <LineChart data={statsData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                           <CartesianGrid stroke="#444" strokeDasharray="3 3" />
@@ -1413,7 +1413,7 @@ export default function RoomPage() {
                         isDarkMode ? 'bg-discord-darker' : 'bg-gray-100'
                       }`}
                     >
-                      <h4 className="text-md font-medium mb-2">Q vs SSIM (시각 유사도 - 1에 가까울수록 좋음)</h4>
+                      <h4 className="text-md font-medium mb-2">Q vs SSIM</h4>
                       <ResponsiveContainer width="100%" height={200}>
                         <LineChart data={statsData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                           <CartesianGrid stroke="#444" strokeDasharray="3 3" />

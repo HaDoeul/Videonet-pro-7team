@@ -546,6 +546,7 @@ async def get_user_meetings(current_user = Depends(verify_token)):
                 for m in meetings
             ]
         }
+        
 app.mount("/", socket_app)
 print("✅ Socket.IO가 FastAPI 앱에 마운트되었습니다.")
 

@@ -184,3 +184,10 @@ async def delete_file(file_id: str):
     del file_metadata[file_id]
 
     return {"message": "파일 삭제 완료"}
+
+@router.get("/download-compressed")
+async def download_compressed(path: str):
+    real_path = Path(path)
+    if not real_path.exists():
+        raise HTTPException(404, "파일을 찾을 수 없습니다")
+    return FileResponse(real_path)

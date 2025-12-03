@@ -23,7 +23,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { compressImage } from '@/utils/compressImage';
 import { compressVideo } from '@/utils/compressVideo';
-
+import { serverCompress } from "@/utils/compressVideoInServer";
 
 interface FileTransferProps {
   roomId: string;
@@ -289,37 +289,6 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
         setProgress(progress);
       }
     });
-    // H.263 압축 후 서버에 인코딩 요청 → P2P 전송
-    const sendFileH263 = async () => {
-      if (!selectedFile) return;
-
-      try {
-        toast('H.263 압축 전송 요청 중...', { icon: '🎬' });
-
-        // File → ArrayBuffer → Uint8Array
-        const buffer = await selectedFile.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-
-        // Uint8Array → base64 문자열
-        let binary = '';
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const fileBase64 = btoa(binary);
-
-        // 서버에 H.263 인코딩 + 전송 요청
-        socket.emit('encode_and_send_h263', {
-          roomId,
-          fileName: selectedFile.name,
-          fileData: fileBase64,
-        });
-
-        toast.success('서버로 H.263 압축 전송 요청을 보냈습니다');
-      } catch (error) {
-        console.error('H.263 전송 요청 실패:', error);
-        toast.error('H.263 압축 전송 요청에 실패했습니다');
-      }
-    };
 
     socket.on('file_transfer_end', () => {
       if (fileMetadata && receivedChunks.length > 0) {
@@ -346,7 +315,7 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
       socket.off('file_transfer_end');
     };
   }, [socket]);
-
+  
   // 파일 검증 (모달로 표시)
   const verifyFile = async () => {
     if (!selectedFile || !receivedFile) {
@@ -526,7 +495,7 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
           <div className="w-full bg-discord-darker rounded-full h-4">
             <div
               className="bg-discord-brand h-4 rounded-full transition-all duration-300"
-              style={{ width: `${progress*2}%` }}
+              style={{ width: `${progress}%` }}
             />
           </div>
           <p className="text-sm text-gray-400 text-center">{progress.toFixed(1)}%</p>

@@ -9,7 +9,7 @@ export async function compressVideo(file: File) {
 
     const uint8 = new Uint8Array(await file.arrayBuffer());
     await ffmpeg.writeFile(inputName, uint8);
-
+    console.log('FFmpeg file written:', inputName);
     // 2. FFmpeg 실행 (비트레이트 낮추기)
     await ffmpeg.exec([
         '-i', inputName,
@@ -18,12 +18,13 @@ export async function compressVideo(file: File) {
         '-preset', 'ultrafast',    // 인코딩 속도
         '-tune', 'zerolatency',
         '-acodec', 'aac',
-        '-b:a', '128k',
-        '-threads', '4', 
+        '-b:a', '64k',
+        '-b:v', '100k',          // 🔥 비트레이트 조절 (낮출수록 용량↓)
+        '-threads', '8', 
         '-psnr',
         outputName,
     ]);
-    
+    console.log('FFmpeg compression complete:', outputName);
     // 3. 출력 파일 읽기
     const data = await ffmpeg.readFile(outputName);
 
