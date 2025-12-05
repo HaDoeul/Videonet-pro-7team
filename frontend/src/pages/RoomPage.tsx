@@ -2,7 +2,8 @@
  * 화상회의 룸 페이지 - WebRTC 비디오 컨퍼런싱
  * (장치 선택 및 변경, 손들기 기능 추가됨, 비디오 품질 측정 기능 추가됨)
  */
-
+//안승찬 UI 테마, 강퇴버튼, 레이아웃 개선
+//이한석 웹캠 실시간 통계 그래프 표시 기능 추가
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';

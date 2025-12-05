@@ -1,7 +1,7 @@
 /**
  * 대시보드 페이지 - 로그인 후 메인 페이지
  */
-
+//안승찬 UI테마, 레이아웃 개선
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';

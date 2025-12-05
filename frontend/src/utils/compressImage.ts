@@ -1,3 +1,4 @@
+//김희도 클라이언트 사이드 이미지 압축
 import imageCompression from "browser-image-compression";
 
 export async function compressImage(file: File): Promise<File> {

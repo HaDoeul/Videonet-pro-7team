@@ -5,7 +5,7 @@
  * - 전송 시간 및 대역폭 측정
  * - 동영상 분석 (슬라이싱 기반 요약, GPT 인물 인식)
  */
-
+//김희도 압축과정 추가 compressImage, compressVideo
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -23,7 +23,6 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { compressImage } from '@/utils/compressImage';
 import { compressVideo } from '@/utils/compressVideo';
-import { serverCompress } from "@/utils/compressVideoInServer";
 
 interface FileTransferProps {
   roomId: string;
@@ -54,6 +53,9 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
   const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+
+  // 서버 압축 상태 관리
+  const [isServerCompressing, setIsServerCompressing] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cvReady, setCvReady] = useState(false);
@@ -174,6 +176,58 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
     } catch (error) {
       console.error('H.263 전송 요청 실패:', error);
       toast.error('H.263 압축 전송 요청에 실패했습니다');
+    }
+  };
+  // ----------------------------------------------------
+  // [NEW] 서버 압축 및 다운로드 핸들러
+  // ----------------------------------------------------
+  const handleServerCompressAndDownload = async () => {
+    if (!selectedFile) return;
+
+    setIsServerCompressing(true);
+    const toastId = toast.loading('서버로 파일 전송 및 압축 중...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      // 필요시 압축 옵션 추가 가능
+      formData.append('quality', '50');
+      formData.append('video_bitrate', '700k');
+
+      // 1. 압축 요청
+      const uploadRes = await axios.post('/api/files/compress-and-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const { filename, file_size } = uploadRes.data;
+      
+      toast.loading(`압축 완료! 다운로드 시작... (${(file_size / 1024 / 1024).toFixed(2)} MB)`, { id: toastId });
+
+      // 2. 압축된 파일 다운로드 요청
+      const downloadRes = await axios.get('/api/files/download-compressed', {
+        params: { filename: filename },
+        responseType: 'blob', // 바이너리 데이터로 받음
+      });
+
+      // 3. 브라우저 다운로드 트리거
+      const url = window.URL.createObjectURL(new Blob([downloadRes.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename); // 서버가 준 파일명으로 저장
+      document.body.appendChild(link);
+      link.click();
+      
+      // 정리
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('서버 압축 파일 다운로드 완료!', { id: toastId });
+
+    } catch (error) {
+      console.error('서버 압축 실패:', error);
+      toast.error('서버 압축 및 다운로드 실패', { id: toastId });
+    } finally {
+      setIsServerCompressing(false);
     }
   };
   // 파일 전송 (청크 기반)
@@ -471,6 +525,12 @@ export default function FileTransfer({ roomId, socket, myUserId }: FileTransferP
           >
             파일 전송
           </button>
+          {/* <button
+            onClick={handleServerCompressAndDownload}
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors mb-2"
+          >
+            서버 압축 후 다운로드
+          </button> */}
           <label>
             <input
               type="checkbox"

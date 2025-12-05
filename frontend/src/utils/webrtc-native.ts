@@ -2,7 +2,7 @@
  * Native WebRTC 구현 - SimplePeer 없이 순수 WebRTC API 사용
  * 브라우저 호환성 문제 해결 및 T3 통계 기능을 위해 수정됨
  */
-
+//이한석 웹캠 실시간 통계 그래프 표시 기능 추가
 import type { ConnectionState } from '@/types';
 
 // WebRTC 설정

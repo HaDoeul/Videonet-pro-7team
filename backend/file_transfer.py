@@ -2,7 +2,7 @@
 VideoNet Pro - 파일 전송 + 자동 압축 시스템 (T4/T5 완성형)
 이미지 / 오디오 / 비디오 → 자동 판별 + 자동 압축 + 업로드
 """
-
+#김종헌 파일 전송 + 자동 압축 시스템 구현
 import os
 import hashlib
 import subprocess
@@ -39,7 +39,8 @@ def calculate_file_hash(file_path: str) -> str:
 # ------------------------------------------
 async def compress_image(file: UploadFile, quality: int = 50):
     original_path = UPLOAD_DIR / file.filename
-    compressed_path = UPLOAD_DIR / f"img_q{quality}_{file.filename}"
+    compressed_filename = f"img_q{quality}_{file.filename}"
+    compressed_path = UPLOAD_DIR / compressed_filename
 
     # 원본 저장
     async with aiofiles.open(original_path, 'wb') as f:
@@ -47,16 +48,20 @@ async def compress_image(file: UploadFile, quality: int = 50):
             await f.write(chunk)
 
     # JPEG 압축
-    img = Image.open(original_path).convert("RGB")
-    img.save(compressed_path, "JPEG", quality=quality)
-
-    size = os.path.getsize(compressed_path)
-    return {
-        "type": "image",
-        "compressed_file": str(compressed_path),
-        "quality": quality,
-        "file_size": size
-    }
+    try:
+        img = Image.open(original_path).convert("RGB")
+        img.save(compressed_path, "JPEG", quality=quality)
+        
+        size = os.path.getsize(compressed_path)
+        return {
+            "type": "image",
+            "filename": compressed_filename, # 파일명만 반환
+            "quality": quality,
+            "file_size": size
+        }
+    except Exception as e:
+        print(f"이미지 압축 실패: {e}")
+        return {"error": "압축 실패", "filename": file.filename}
 
 
 # ------------------------------------------
@@ -64,7 +69,8 @@ async def compress_image(file: UploadFile, quality: int = 50):
 # ------------------------------------------
 async def compress_audio(file: UploadFile, bitrate: str = "64k"):
     input_path = UPLOAD_DIR / file.filename
-    output_path = UPLOAD_DIR / f"audio_{bitrate}_{file.filename}"
+    compressed_filename = f"audio_{bitrate}_{file.filename}"
+    output_path = UPLOAD_DIR / compressed_filename
 
     async with aiofiles.open(input_path, 'wb') as f:
         while chunk := await file.read(8192):
@@ -74,10 +80,13 @@ async def compress_audio(file: UploadFile, bitrate: str = "64k"):
     cmd = f"ffmpeg -y -i {input_path} -b:a {bitrate} {output_path}"
     subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+    if not output_path.exists():
+         raise HTTPException(500, "오디오 압축 실패")
+
     size = os.path.getsize(output_path)
     return {
         "type": "audio",
-        "compressed_file": str(output_path),
+        "filename": compressed_filename,
         "bitrate": bitrate,
         "file_size": size
     }
@@ -88,20 +97,25 @@ async def compress_audio(file: UploadFile, bitrate: str = "64k"):
 # ------------------------------------------
 async def compress_video(file: UploadFile, bitrate: str = "700k"):
     input_path = UPLOAD_DIR / file.filename
-    output_path = UPLOAD_DIR / f"video_{bitrate}_{file.filename}"
+    compressed_filename = f"video_{bitrate}_{file.filename}"
+    output_path = UPLOAD_DIR / compressed_filename
 
     async with aiofiles.open(input_path, 'wb') as f:
         while chunk := await file.read(8192):
             await f.write(chunk)
 
     # ffmpeg 비디오 비트레이트 압축
-    cmd = f"ffmpeg -y -i {input_path} -b:v {bitrate} -bufsize {bitrate} -crf 40 {output_path}"
+    # crf 값을 조절하여 화질/용량 균형 조절
+    cmd = f"ffmpeg -y -i {input_path} -b:v {bitrate} -bufsize {bitrate} -crf 35 -preset ultrafast {output_path}"
     subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    if not output_path.exists():
+         raise HTTPException(500, "비디오 압축 실패")
 
     size = os.path.getsize(output_path)
     return {
         "type": "video",
-        "compressed_file": str(output_path),
+        "filename": compressed_filename,
         "bitrate": bitrate,
         "file_size": size
     }
@@ -109,7 +123,6 @@ async def compress_video(file: UploadFile, bitrate: str = "700k"):
 
 # ------------------------------------------
 # 핵심: 자동 분류 + 자동 압축 + 자동 업로드
-# (버튼 1개로 T4/T5 끝)
 # ------------------------------------------
 @router.post("/compress-and-upload")
 async def compress_and_upload(
@@ -121,11 +134,11 @@ async def compress_and_upload(
     filename = file.filename.lower()
 
     # 이미지 파일
-    if filename.endswith((".jpg", ".jpeg", ".png")):
+    if filename.endswith((".jpg", ".jpeg", ".png", ".webp")):
         return await compress_image(file, quality)
 
     # 오디오 파일
-    if filename.endswith((".mp3", ".wav", ".aac")):
+    if filename.endswith((".mp3", ".wav", ".aac", ".flac")):
         return await compress_audio(file, bitrate=audio_bitrate)
 
     # 비디오 파일
@@ -137,19 +150,30 @@ async def compress_and_upload(
 
 
 # ------------------------------------------
-# 파일 다운로드
+# 파일 다운로드 (수정됨)
 # ------------------------------------------
-@router.get("/download/{file_id}")
-async def download_file(file_id: str):
-    if file_id not in file_metadata:
+@router.get("/download-compressed")
+async def download_compressed(filename: str):
+    """
+    압축된 파일을 다운로드합니다.
+    파일명만 받아서 uploads 폴더에서 찾습니다.
+    """
+    # 경로 조작 방지 (보안)
+    safe_filename = os.path.basename(filename)
+    file_path = UPLOAD_DIR / safe_filename
+    
+    if not file_path.exists():
         raise HTTPException(404, "파일을 찾을 수 없습니다")
-
-    meta = file_metadata[file_id]
-    return FileResponse(meta["path"], filename=meta["filename"])
+        
+    return FileResponse(
+        path=file_path, 
+        filename=safe_filename,
+        media_type='application/octet-stream'
+    )
 
 
 # ------------------------------------------
-# 파일 무결성 검증
+# 파일 검증 (기존 유지)
 # ------------------------------------------
 @router.get("/verify/{file_id}")
 async def verify_file(file_id: str, client_hash: str):
@@ -165,29 +189,3 @@ async def verify_file(file_id: str, client_hash: str):
         "client_hash": client_hash,
         "is_valid": is_valid
     }
-
-
-# ------------------------------------------
-# 파일 삭제
-# ------------------------------------------
-@router.delete("/delete/{file_id}")
-async def delete_file(file_id: str):
-    if file_id not in file_metadata:
-        raise HTTPException(404, "파일을 찾을 수 없습니다")
-
-    meta = file_metadata[file_id]
-    path = meta["path"]
-
-    if os.path.exists(path):
-        os.remove(path)
-
-    del file_metadata[file_id]
-
-    return {"message": "파일 삭제 완료"}
-
-@router.get("/download-compressed")
-async def download_compressed(path: str):
-    real_path = Path(path)
-    if not real_path.exists():
-        raise HTTPException(404, "파일을 찾을 수 없습니다")
-    return FileResponse(real_path)

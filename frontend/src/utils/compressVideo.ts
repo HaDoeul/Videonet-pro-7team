@@ -1,3 +1,4 @@
+//김희도 클라이언트 사이드 비디오 압축
 import { getFFmpeg } from '@/utils/ffmpeg.ts';
 
 export async function compressVideo(file: File) {

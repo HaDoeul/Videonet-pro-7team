@@ -1,4 +1,5 @@
 // 📌 서버에서 이미지/비디오/오디오 자동 압축 후 Blob으로 변환
+//김희도 미완
 export async function serverCompress(file) {
     const form = new FormData();
     form.append("file", file);
